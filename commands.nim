@@ -9,10 +9,17 @@ var dbObj: Redis
 var db: ptr Redis
 
 proc fetchStory(id: int64): string =
-  let itemUrl = baseUrl & "item/" & $id & ".json"
-  let resp = getContent(itemUrl)
-  let p = parseJson(resp)
-  result = p["title"].getStr
+  let
+    itemUrl = baseUrl & "item/" & $id & ".json"
+    resp = getContent(itemUrl)
+    p = parseJson(resp)
+
+  let
+    title = p["title"].getStr
+    url = p["url"].getStr
+    id = $p["id"].getNum
+
+  result = title & "\n\n" & url & "\n\n" & "https://news.ycombinator.com/item?id=" & id
 
 proc checkHN() {.thread.} =
   var cache = db.smembers("hn:cache")
