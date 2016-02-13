@@ -62,7 +62,7 @@ proc download(code: string, user: User) =
   user.sendMessage("Downloading: " & filename)
   let parent = getCurrentDir()
   setCurrentDir(parent / "static")
-  discard startProcess("youtube-dl -x --audio-format mp3 " & url)
+  discard execProcess("youtube-dl -x --audio-format mp3 " & url)
   user.sendAudio(filename)
   removeFile(filename)
   setCurrentDir(parent)
