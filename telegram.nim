@@ -1,6 +1,6 @@
 import httpclient, types, os
 
-const token = getEnv("token")
+const token = getEnv("TOKEN")
 const endpoint = "https://api.telegram.org/bot" & token & "/"
 
 proc call(api: string, multipart: MultipartData): string =
