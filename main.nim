@@ -1,9 +1,8 @@
 import asynchttpserver, asyncdispatch, json, nre, options
-import types, telegram, parser, commands, redis
+import types, telegram, parser, commands, redis, os
 
 type
   Config = object
-    db: Redis
     commands: seq[Command]
     modes: seq[Mode]
 
@@ -11,6 +10,7 @@ var config {.threadvar.}: Config
 
 proc handleMessage(data: string) =
   let message = parseMessage(data)
+  echo(message)
   for cmd in config.commands:
     if message.text.match(cmd.regex).isSome:
       cmd.run(message)
@@ -38,8 +38,7 @@ proc cb(req: Request) {.async.} =
 proc main() =
   var server = newAsyncHttpServer()
   commands.init()
-  config = Config(db: redis.open(),
-                  commands: loadCommands(),
+  config = Config(commands: loadCommands(),
                   modes: loadModes())
 
   waitFor server.serve(Port(8000), cb)

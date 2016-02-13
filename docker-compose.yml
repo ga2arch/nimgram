@@ -1,0 +1,14 @@
+nimgram:
+  image: ga2arch/nimgram:latest
+  ports:
+   - "8000:8000"
+  links:
+   - redis
+  environment:
+   - REDIS=redis
+
+redis:
+  image: redis
+  hostname: redis
+  ports:
+   - "6379"

@@ -65,6 +65,7 @@ proc download(code: string, user: User) =
                                    args = @["-x", "--audio-format", "mp3", url],
                                    options = {poStdErrToStdOut, poUsePath})
   user.sendAudio(filename)
+  removeFile(filename)
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
@@ -82,7 +83,7 @@ proc newYTMode(): Mode =
              message.user.sendMessage(getCurrentExceptionMsg()))
 
 proc init*() =
-  dbObj = redis.open()
+  dbObj = redis.open(host = getEnv("REDIS"))
   db = addr(dbObj)
 
 proc loadCommands*(): seq[Command] =
