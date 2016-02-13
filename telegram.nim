@@ -6,7 +6,7 @@ const endpoint = "https://api.telegram.org/bot" & token & "/"
 proc call(api: string, multipart: MultipartData): string =
   var url = endpoint & api
   try:
-    return postContent(url, multipart=multipart)
+    echo(postContent(url, multipart=multipart))
   except Exception:
     echo(getCurrentExceptionMsg())
 
