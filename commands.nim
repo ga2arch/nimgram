@@ -32,12 +32,22 @@ proc checkHN() {.thread.} =
       hnusers       = db.smembers("hn:users")
 
     for i, id in ids:
-      if db.sismember("hn:cache", $id.getNum) == 0:
-        discard db.sadd("hn:cache", $id.getNum)
-        for userid in hnusers:
-          let threshold = db.hget(userid, "hn:threshold").parseInt
+      for userid in hnusers:
+        let cacheKey = userid & ":hn:sent"
+        if db.sismember(cacheKey, $id.getNum) == 0:
+          let threshold = db.hget(userid, "hn:threshond").parseInt
           if i < threshold:
-            sendMessage(userid.parseInt, fetchStory(id.getNum))
+            discard db.sadd(cacheKey, $id.getNum)
+            var story: string
+            if db.sismember("hn:cache", $id.getNum) == 1:
+              story = db.get("hn:story:" & $id.getNum)
+            else:
+              story = fetchStory(id.getNum)
+              discard db.sadd("hn:cache", $id.getNum)
+              db.setk("hn:story:" & $id.getNum, story)
+
+            sendMessage(userid.parseInt, story)
+
     sleep(1000*60*3)
 
 proc newHNMode(): Mode =
