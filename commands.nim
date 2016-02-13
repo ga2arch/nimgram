@@ -66,7 +66,8 @@ proc newHNMode(): Mode =
 
 proc download(code: string, user: User) =
   let url = "http://www.youtube.com/watch?v=" & code
-  let resp = execProcess("youtube-dl -x --get-filename " & url)
+  let resp = execProcess("youtube-dl --get-filename " &
+    "--output static/%(title)s.%(ext)s " & url)
   if resp.startsWith("ERROR"):
     user.sendMessage(resp)
     return
@@ -74,9 +75,9 @@ proc download(code: string, user: User) =
   let filename = resp.changeFileExt(".mp3")
   user.sendMessage("Downloading: " & filename)
   discard execProcess("youtube-dl -x --audio-format mp3 " &
-    url & " --output static/%(title)s.%(ext)s")
-  user.sendAudio(getCurrentDir() / "static" / filename)
-  removeFile(getCurrentDir() / "static" / filename)
+    url & " --output static/%(title)s.%(ext)s --no-playlist")
+  user.sendAudio(filename)
+  removeFile(filename)
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
