@@ -75,8 +75,8 @@ proc download(code: string, user: User) =
   user.sendMessage("Downloading: " & filename)
   discard execProcess("youtube-dl -x --audio-format mp3 " &
     url & " --output static/%(title)s.%(ext)s")
-  user.sendAudio("static" / filename)
-  removeFile("static" / filename)
+  user.sendAudio(getCurrentDir() / "static" / filename)
+  removeFile(getCurrentDir() / "static" / filename)
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
