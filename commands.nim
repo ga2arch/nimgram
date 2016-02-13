@@ -1,63 +1,59 @@
 import types, nre, telegram, sets, options, tables, osproc
 import httpclient, json, threadpool, os, locks, strutils
+import redis as redis
+
+{.experimental.}
 
 const baseUrl = "https://hacker-news.firebaseio.com/v0/"
-var hlock: Lock
-var hnchats {.guard: hlock.}: Table[int64, int64]
-
-template lock(a: Lock; body: stmt): auto =
-  a.acquire
-  defer: a.release
-  {.locks: [a].}:
-    body
+var dbR: Redis
+var db: ptr Redis
 
 proc fetchStory(id: int64): string =
   let itemUrl = baseUrl & "item/" & $id & ".json"
   let resp = getContent(itemUrl)
   let p = parseJson(resp)
-  let title = p["title"].getStr
-  return title
+  result = p["title"].getStr
 
-proc checkHN(hnchats: ptr Table[int64, int64]) =
-  var cache = initSet[int64]()
+proc checkHN() {.thread.} =
+  var cache = db.smembers("hn:cache")
   while true:
     let topStoriesUrl = baseUrl & "topstories.json"
     let resp = getContent(topStoriesUrl)
     let ids = parseJson(resp).getElems[0..20]
+    let hnusers = db.smembers("hn:users")
+
     for i, id in ids:
-      if not cache.containsOrIncl(id.getNum):
-        lock hlock:
-          for userid, threashold in pairs(hnchats[]):
-            if i <= threashold:
-              sendMessage(userid, fetchStory(id.getNum))
+      if not cache.contains($id.getNum):
+        discard db.sadd("hn:cache", $id.getNum)
+        for userid in hnusers:
+          let threshold = db.hget(userid, "hn:threshold").parseInt
+          if i < threshold:
+            sendMessage(userid.parseInt, fetchStory(id.getNum))
     sleep(1000*60*3)
 
 proc newHNMode(): Mode =
-  var chatsPtr: ptr Table[int64, int64]
-  lock hlock:
-    hnchats = initTable[int64, int64]()
-    chatsPtr = addr(hnchats)
-
-  spawn checkHN(chatsPtr)
+  spawn checkHN()
 
   let run = proc(message: Message) =
     let thresholdRegex = re"/threshold (?<num>[0-9]+)"
     let capture = message.text.match(thresholdRegex)
     if capture.isSome:
       let num = capture.get.captures["num"]
-      lock hlock:
-        hnchats[message.user.id] = num.parseInt
+      discard db.hSet($message.user.id, "hn:threshold", num)
       message.user.sendMessage("Threshold set " & num)
 
   Mode(name: "hn",
-       active: false,
+       isActive: proc(user: User): bool =
+                     let ismem = db[].sismember("hn:users", $user.id)
+                     return ismem == 1,
        run: run,
-       enable: proc(message: Message) =
-         lock hlock:
-           hnchats[message.user.id] = 5,
-       disable: proc(message: Message) =
-         lock hlock:
-           hnchats.del(message.user.id))
+       enable: proc(user: User) =
+         discard db.hSet($user.id, "hn:threshold", "5")
+         discard db.sAdd("hn:users", $user.id),
+
+       disable: proc(user: User) =
+         discard db.del($user.id)
+         discard db.sRem("hn:users", $user.id))
 
 proc download(code: string, user: User) =
   let url = "http://www.youtube.com/watch?v=" & code
@@ -72,9 +68,9 @@ proc download(code: string, user: User) =
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
-       active: true,
-       enable: proc(message: Message) = discard,
-       disable: proc(message: Message) = discard,
+       isActive: proc(user: User): bool = return true,
+       enable: proc(user: User) = discard,
+       disable: proc(user: User) = discard,
        run: proc(message: Message) =
          echo(message)
          let ytRegex = re"(?:youtube\.com\/\S*(?:(?:\/e(?:mbed))?\/|watch\?(?:\S*?&?v\=))|youtu\.be\/)([a-zA-Z0-9_-]{6,11})"
@@ -84,6 +80,10 @@ proc newYTMode(): Mode =
              download(capture.get.captures[0], message.user)
            except:
              message.user.sendMessage("Error"))
+
+proc init*() =
+  dbR = redis.open()
+  db = addr(dbR)
 
 proc loadCommands*(): seq[Command] =
   var cmds: seq[Command] = @[]

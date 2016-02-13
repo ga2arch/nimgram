@@ -1,14 +1,6 @@
 import nre
 
 type
-  RpcCommand* = enum
-    rcAdd, rcDel, rcGet, rcResp
-
-  StoreRpc* = object
-    action*: RpcCommand
-    args*: tuple[key: int64, value: int64]
-
-type
   User* = object
     id*: int64
     name*: string
@@ -29,7 +21,7 @@ type
 
   Mode* = ref object of RootObj
     name*: string
-    enable*: proc(message: Message)
-    disable*: proc(message: Message)
+    enable*: proc(user: User)
+    disable*: proc(user: User)
     run*: proc(message: Message)
-    active*: bool
+    isActive*: proc(user: User): bool

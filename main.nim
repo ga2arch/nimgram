@@ -1,8 +1,9 @@
 import asynchttpserver, asyncdispatch, json, nre, options
-import types, telegram, parser, commands
+import types, telegram, parser, commands, redis
 
 type
   Config = object
+    db: Redis
     commands: seq[Command]
     modes: seq[Mode]
 
@@ -19,17 +20,15 @@ proc handleMessage(data: string) =
     let on  = re("/" & mode.name & " on")
     let off = re("/" & mode.name & " off")
 
-    if mode.active:
+    if mode.isActive(message.user):
       if message.text.match(off).isSome:
-        mode.disable(message)
-        mode.active = false
+        mode.disable(message.user)
         message.user.sendMessage(mode.name & " off")
       else:
         mode.run(message)
     else:
       if message.text.match(on).isSome:
-        mode.enable(message)
-        mode.active = true
+        mode.enable(message.user)
         message.user.sendMessage(mode.name & " on")
 
 proc cb(req: Request) {.async.} =
@@ -38,7 +37,9 @@ proc cb(req: Request) {.async.} =
 
 proc main() =
   var server = newAsyncHttpServer()
-  config = Config(commands: loadCommands(),
+  commands.init()
+  config = Config(db: redis.open(),
+                  commands: loadCommands(),
                   modes: loadModes())
 
   waitFor server.serve(Port(8000), cb)
