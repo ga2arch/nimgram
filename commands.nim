@@ -64,7 +64,7 @@ proc download(code: string, user: User) =
                                    workingDir = "static",
                                    args = @["-x", "--audio-format", "mp3", url],
                                    options = {poStdErrToStdOut, poUsePath})
-  user.sendMessage("Downloaded")
+  user.sendAudio(filename)
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
@@ -78,8 +78,8 @@ proc newYTMode(): Mode =
          if capture.isSome:
            try:
              download(capture.get.captures[0], message.user)
-           except:
-             message.user.sendMessage("Error"))
+           except Exception:
+             message.user.sendMessage(getCurrentExceptionMsg()))
 
 proc init*() =
   dbR = redis.open()

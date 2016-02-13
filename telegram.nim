@@ -7,8 +7,8 @@ proc call(api: string, multipart: MultipartData): string =
   var url = endpoint & api
   try:
     return postContent(url, multipart=multipart)
-  except:
-    echo("Unknow exception")
+  except Exception:
+    echo(getCurrentExceptionMsg())
 
 proc sendMessage*(id: int64, text: string) =
   var data = newMultipartData()
@@ -21,3 +21,12 @@ proc sendMessage*(user: User, text: string) =
 
 proc sendMessage*(chat: Chat, text: string) =
   sendMessage(chat.id, text)
+
+proc sendAudio*(id: int64, path: string) =
+  var data = newMultipartData()
+  data["chat_id"] = $id
+  data.addFiles({"audio": path})
+  discard call("sendAudio", data)
+
+proc sendAudio*(user: User, path: string) =
+  sendAudio(user.id, path)
