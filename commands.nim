@@ -5,7 +5,7 @@ import redis as redis
 {.experimental.}
 
 const baseUrl = "https://hacker-news.firebaseio.com/v0/"
-var dbR: Redis
+var dbObj: Redis
 var db: ptr Redis
 
 proc fetchStory(id: int64): string =
@@ -82,8 +82,8 @@ proc newYTMode(): Mode =
              message.user.sendMessage(getCurrentExceptionMsg()))
 
 proc init*() =
-  dbR = redis.open()
-  db = addr(dbR)
+  dbObj = redis.open()
+  db = addr(dbObj)
 
 proc loadCommands*(): seq[Command] =
   var cmds: seq[Command] = @[]
