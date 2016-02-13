@@ -19,15 +19,19 @@ proc fetchStory(id: int64): string =
     url = p["url"].getStr
     id = $p["id"].getNum
 
-  result = title & "\n\n" & url & "\n\n" & "https://news.ycombinator.com/item?id=" & id
+  result = title &
+    "\n\n" & url &
+    "\n\n" & "https://news.ycombinator.com/item?id=" & id
 
 proc checkHN() {.thread.} =
-  var cache = db.smembers("hn:cache")
   while true:
     let topStoriesUrl = baseUrl & "topstories.json"
     let resp = getContent(topStoriesUrl)
     let ids = parseJson(resp).getElems[0..20]
-    let hnusers = db.smembers("hn:users")
+
+    let
+      cache = db.smembers("hn:cache")
+      hnusers = db.smembers("hn:users")
 
     for i, id in ids:
       if not cache.contains($id.getNum):
