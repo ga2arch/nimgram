@@ -1,10 +1,11 @@
 import httpclient, types, os
 
-let token = getEnv("TOKEN")
-let endpoint = "https://api.telegram.org/bot" & token & "/"
 
 proc call(api: string, multipart: MultipartData) =
-  var url = endpoint & api
+  let
+    token    = getEnv("TOKEN")
+    endpoint = "https://api.telegram.org/bot" & token & "/"
+    url      = endpoint & api
   try:
     discard postContent(url, multipart=multipart)
   except Exception:
