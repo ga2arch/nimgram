@@ -105,13 +105,17 @@ proc newYTMode(): Mode =
            except Exception:
              message.user.sendMessage(getCurrentExceptionMsg()))
 
+proc newPingCommand(): Command =
+  Command(regex: re"/ping",
+          run: proc(message: Message) =
+            message.user.sendMessage("PONG"))
+
 proc init*() =
   dbObj = redis.open(host = getEnv("REDIS"))
   db = addr(dbObj)
 
 proc loadCommands*(): seq[Command] =
-  var cmds: seq[Command] = @[]
-  return cmds
+  return @[newPingCommand()]
 
 proc loadModes*(): seq[Mode] =
   return @[newHNMode(), newYTMode()]
