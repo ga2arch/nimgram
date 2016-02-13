@@ -14,7 +14,6 @@ addons:
     - libgc-dev
 before_script:
   - |
-    cd $HOME
     if [ ! -x Nim/bin/nim ]; then
        git clone https://github.com/nim-lang/Nim.git
        cd Nim
@@ -27,16 +26,16 @@ before_script:
     fi
   - export PATH=$(pwd)/Nim/bin:$PATH
 script:
-  - cd ga2arch/nimgram
   - nim --version
   - nim c -d:ssl -d:release --threads:on --gc:boehm main.nim
   - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+  - docker pull ga2arch/nimgram-base:latest
   - docker build -t ga2arch/nimgram .
   - docker push ga2arch/nimgram
 
 cache:
   directories:
-    - $HOME/Nim
+    - Nim
     
 notifications:
   email: false
