@@ -2,11 +2,7 @@ import types, nre, telegram, sets, options, tables, osproc
 import httpclient, json, threadpool, os, locks, strutils
 import redis as redis
 
-{.experimental.}
-
 const baseUrl = "https://hacker-news.firebaseio.com/v0/"
-var dbObj: Redis
-var db: ptr Redis
 
 proc fetchStory(id: int64): string =
   let
@@ -24,6 +20,7 @@ proc fetchStory(id: int64): string =
     "\n\n" & "https://news.ycombinator.com/item?id=" & id
 
 proc checkHN() {.thread.} =
+  var db = redis.open(host = getEnv("REDIS"))
   while true:
     let
       topStoriesUrl = baseUrl & "topstories.json"
@@ -51,6 +48,7 @@ proc checkHN() {.thread.} =
     sleep(1000*60*3)
 
 proc newHNMode(): Mode =
+  var db = redis.open(host = getEnv("REDIS"))
   spawn checkHN()
 
   let run = proc(message: Message) =
@@ -109,10 +107,6 @@ proc newPingCommand(): Command =
   Command(regex: re"/ping",
           run: proc(message: Message) =
             message.user.sendMessage("PONG"))
-
-proc init*() =
-  dbObj = redis.open(host = getEnv("REDIS"))
-  db = addr(dbObj)
 
 proc loadCommands*(): seq[Command] =
   return @[newPingCommand()]

@@ -38,7 +38,6 @@ proc cb(req: Request) {.async.} =
 
 proc main() =
   var server = newAsyncHttpServer()
-  commands.init()
   config = Config(commands: loadCommands(),
                   modes: loadModes())
 
