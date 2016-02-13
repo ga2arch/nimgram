@@ -25,21 +25,20 @@ proc fetchStory(id: int64): string =
 
 proc checkHN() {.thread.} =
   while true:
-    let topStoriesUrl = baseUrl & "topstories.json"
-    let resp = getContent(topStoriesUrl)
-    let ids = parseJson(resp).getElems[0..20]
-
     let
-      cache = db.smembers("hn:cache")
-      hnusers = db.smembers("hn:users")
+      topStoriesUrl = baseUrl & "topstories.json"
+      resp          = getContent(topStoriesUrl)
+      ids           = parseJson(resp).getElems[0..20]
+      hnusers       = db.smembers("hn:users")
 
     for i, id in ids:
-      if not cache.contains($id.getNum):
+      if db.sismember("hn:cache", $id.getNum) == 0:
         discard db.sadd("hn:cache", $id.getNum)
         for userid in hnusers:
           let threshold = db.hget(userid, "hn:threshold").parseInt
           if i < threshold:
             sendMessage(userid.parseInt, fetchStory(id.getNum))
+            
     sleep(1000*60*3)
 
 proc newHNMode(): Mode =
