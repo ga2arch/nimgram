@@ -2,8 +2,6 @@ import types, nre, telegram, sets, options, tables, osproc
 import httpclient, json, threadpool, os, locks, strutils
 import redis as redis
 
-{.experimental.}
-
 const baseUrl = "https://hacker-news.firebaseio.com/v0/"
 
 proc fetchStory(id: int64): string =
