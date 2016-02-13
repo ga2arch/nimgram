@@ -27,7 +27,7 @@ before_script:
   - export PATH=$(pwd)/Nim/bin:$PATH
 script:
   - nim --version
-  - nim c -d:ssl --threads:on main.nim
+  - nim c -d:ssl --threads:on --gc:boehm main.nim
   - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - docker pull ga2arch/nimgram-base:latest
   - docker build -t ga2arch/nimgram .

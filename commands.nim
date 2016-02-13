@@ -71,6 +71,7 @@ proc newHNMode(): Mode =
          discard db.sAdd("hn:users", $user.id),
 
        disable: proc(user: User) =
+         discard db.del($user.id & ":hn:sent")
          discard db.del($user.id)
          discard db.sRem("hn:users", $user.id))
 
