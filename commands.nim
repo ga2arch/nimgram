@@ -57,8 +57,12 @@ proc newHNMode(): Mode =
 
 proc download(code: string, user: User) =
   let url = "http://www.youtube.com/watch?v=" & code
-  let filename =
-    execProcess("youtube-dl -x --get-filename " & url).changeFileExt(".mp3")
+  let resp = execProcess("youtube-dl -x --get-filename " & url)
+  if resp.startsWith("ERROR"):
+    user.sendMessage(resp)
+    return
+
+  let filename = resp.changeFileExt(".mp3")
   user.sendMessage("Downloading: " & filename)
   let parent = getCurrentDir()
   setCurrentDir(parent / "static")
