@@ -32,7 +32,8 @@ proc handleMessage(data: string) =
         message.user.sendMessage(mode.name & " on")
 
 proc cb(req: Request) {.async.} =
-  handleMessage(req.body)
+  try: handleMessage(req.body)
+  except: discard
   await req.respond(Http200, "")
 
 proc main() =
