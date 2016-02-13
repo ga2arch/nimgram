@@ -33,11 +33,11 @@ proc checkHN() {.thread.} =
 
     for i, id in ids:
       for userid in hnusers:
-        let cacheKey = userid & ":hn:sent"
-        if db.sismember(cacheKey, $id.getNum) == 0:
-          let threshold = db.hget(userid, "hn:threshond").parseInt
+        let sentKey = userid & ":hn:sent"
+        if db.sismember(sentKey, $id.getNum) == 0:
+          let threshold = db.hget(userid, "hn:threshold").parseInt
           if i < threshold:
-            discard db.sadd(cacheKey, $id.getNum)
+            discard db.sadd(sentKey, $id.getNum)
             var story: string
             if db.sismember("hn:cache", $id.getNum) == 1:
               story = db.get("hn:story:" & $id.getNum)
