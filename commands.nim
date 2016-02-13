@@ -38,7 +38,6 @@ proc checkHN() {.thread.} =
           let threshold = db.hget(userid, "hn:threshold").parseInt
           if i < threshold:
             sendMessage(userid.parseInt, fetchStory(id.getNum))
-            
     sleep(1000*60*3)
 
 proc newHNMode(): Mode =
@@ -74,12 +73,10 @@ proc download(code: string, user: User) =
 
   let filename = resp.changeFileExt(".mp3")
   user.sendMessage("Downloading: " & filename)
-  let parent = getCurrentDir()
-  setCurrentDir(parent / "static")
-  discard execProcess("youtube-dl -x --audio-format mp3 " & url)
-  user.sendAudio(filename)
-  removeFile(filename)
-  setCurrentDir(parent)
+  discard execProcess("youtube-dl -x --audio-format mp3 " &
+    url & " --output static/%(title)s.%(ext)s")
+  user.sendAudio("static" / filename)
+  removeFile("static" / filename)
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
