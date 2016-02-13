@@ -2,7 +2,11 @@ import types, nre, telegram, sets, options, tables, osproc
 import httpclient, json, threadpool, os, locks, strutils
 import redis as redis
 
+{.experimental.}
+
 const baseUrl = "https://hacker-news.firebaseio.com/v0/"
+var dbObj: Redis
+var db: ptr Redis
 
 proc fetchStory(id: int64): string =
   let itemUrl = baseUrl & "item/" & $id & ".json"
@@ -11,7 +15,6 @@ proc fetchStory(id: int64): string =
   result = p["title"].getStr
 
 proc checkHN() {.thread.} =
-  var db = redis.open(host = getEnv("REDIS"))
   var cache = db.smembers("hn:cache")
   while true:
     let topStoriesUrl = baseUrl & "topstories.json"
@@ -35,24 +38,20 @@ proc newHNMode(): Mode =
     let thresholdRegex = re"/threshold (?<num>[0-9]+)"
     let capture = message.text.match(thresholdRegex)
     if capture.isSome:
-      var db = redis.open(host = getEnv("REDIS"))
       let num = capture.get.captures["num"]
       discard db.hSet($message.user.id, "hn:threshold", num)
       message.user.sendMessage("Threshold set " & num)
 
   Mode(name: "hn",
        isActive: proc(user: User): bool =
-                     var db = redis.open(host = getEnv("REDIS"))
                      let ismem = db.sismember("hn:users", $user.id)
                      return ismem == 1,
        run: run,
        enable: proc(user: User) =
-         var db = redis.open(host = getEnv("REDIS"))
          discard db.hSet($user.id, "hn:threshold", "5")
          discard db.sAdd("hn:users", $user.id),
 
        disable: proc(user: User) =
-         var db = redis.open(host = getEnv("REDIS"))
          discard db.del($user.id)
          discard db.sRem("hn:users", $user.id))
 
@@ -82,6 +81,10 @@ proc newYTMode(): Mode =
              download(capture.get.captures[0], message.user)
            except Exception:
              message.user.sendMessage(getCurrentExceptionMsg()))
+
+proc init*() =
+  dbObj = redis.open(host = getEnv("REDIS"))
+  db = addr(dbObj)
 
 proc loadCommands*(): seq[Command] =
   var cmds: seq[Command] = @[]

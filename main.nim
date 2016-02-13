@@ -33,11 +33,12 @@ proc handleMessage(data: string) =
 
 proc cb(req: Request) {.async.} =
   try: handleMessage(req.body)
-  except: discard
+  except: discard 
   await req.respond(Http200, "")
 
 proc main() =
   var server = newAsyncHttpServer()
+  commands.init()
   config = Config(commands: loadCommands(),
                   modes: loadModes())
 

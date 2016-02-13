@@ -1,7 +1,7 @@
 import httpclient, types, os
 
-const token = getEnv("TOKEN")
-const endpoint = "https://api.telegram.org/bot" & token & "/"
+let token = getEnv("TOKEN")
+let endpoint = "https://api.telegram.org/bot" & token & "/"
 
 proc call(api: string, multipart: MultipartData) =
   var url = endpoint & api
