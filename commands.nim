@@ -60,12 +60,12 @@ proc download(code: string, user: User) =
   let filename =
     execProcess("youtube-dl -x --get-filename " & url).changeFileExt(".mp3")
   user.sendMessage("Downloading: " & filename)
-  discard waitForExit startProcess("youtube-dl",
-                                   workingDir = "static",
-                                   args = @["-x", "--audio-format", "mp3", url],
-                                   options = {poStdErrToStdOut, poUsePath})
+  let parent = getCurrentDir()
+  setCurrentDir(parent / "static")
+  discard startProcess("youtube-dl -x --audio-format mp3 " & url)
   user.sendAudio(filename)
   removeFile(filename)
+  setCurrentDir(parent)
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
