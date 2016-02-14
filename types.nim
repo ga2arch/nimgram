@@ -1,4 +1,4 @@
-import nre
+import nre, tables, queues
 
 type
   User* = object
@@ -25,3 +25,20 @@ type
     disable*: proc(user: User)
     run*: proc(message: Message)
     isActive*: proc(user: User): bool
+
+type
+  Next* = object
+    run*: proc(message: Message)
+
+type
+  RpcKind* = enum Telegram, Continuation
+  Rpc* = object
+    case kind*: RpcKind
+    of Telegram:
+      message*: Message
+    of Continuation:
+      user*: User
+      next*: Next
+
+var channel*: Channel[Rpc]
+
