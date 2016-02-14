@@ -112,10 +112,7 @@ proc newYTMode(): Mode =
 proc newPingCommand(): Command =
   Command(regex: re"/ping",
           run: proc(message: Message, rmatch: RegexMatch) =
-            message.user.sendMessage("PONG")
-            next(message.user, proc(message: Message) =
-                                 message.user.sendMessage("You sent " & message.text))
-  )
+            message.user.sendMessage("PONG"))
 
 proc newRemindCommand(): Command =
   let waiter = proc(user: User, text: string, time: int) =
@@ -128,7 +125,7 @@ proc newRemindCommand(): Command =
               interval = rmatch.captures["interval"].parseInt
               unit     = rmatch.captures["unit"]
               text     = rmatch.captures["text"]
-
+              
             var time: int = 0
             case unit
             of "s": time = 1000
