@@ -105,11 +105,35 @@ proc newYTMode(): Mode =
 
 proc newPingCommand(): Command =
   Command(regex: re"/ping",
-          run: proc(message: Message) =
+          run: proc(message: Message, rmatch: RegexMatch) =
             message.user.sendMessage("PONG"))
 
+proc newRemindCommand(): Command =
+  let waiter = proc(user: User, text: string, time: int) =
+    sleep(time)
+    user.sendMessage(text)
+
+  Command(regex: re"/remind (?<interval>[0-9]+)(?<unit>[s_m_h]) (?<text>.*)",
+          run: proc(message: Message, rmatch: RegexMatch) =
+            let
+              interval = rmatch.captures["interval"].parseInt
+              unit     = rmatch.captures["unit"]
+              text     = rmatch.captures["text"]
+
+            var time: int = 0
+            case unit
+            of "s": time = 1000
+            of "m": time = 1000 * 60
+            of "h": time = 1000 * 60 * 60
+            else: return
+
+            message.user.sendMessage("Remind set")
+            time = time * interval
+            spawn waiter(message.user, text, time)
+  )
+
 proc loadCommands*(): seq[Command] =
-  return @[newPingCommand()]
+  return @[newPingCommand(), newRemindCommand()]
 
 proc loadModes*(): seq[Mode] =
   return @[newHNMode(), newYTMode()]

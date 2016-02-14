@@ -12,8 +12,9 @@ proc handleMessage(data: string) =
   let message = parseMessage(data)
   echo(message)
   for cmd in config.commands:
-    if message.text.match(cmd.regex).isSome:
-      cmd.run(message)
+    let rmatch = message.text.match(cmd.regex)
+    if rmatch.isSome:
+      cmd.run(message, rmatch.get)
       return
 
   for mode in config.modes:
@@ -33,7 +34,7 @@ proc handleMessage(data: string) =
 
 proc cb(req: Request) {.async.} =
   try: handleMessage(req.body)
-  except: discard 
+  except: discard
   await req.respond(Http200, "")
 
 proc main() =

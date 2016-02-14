@@ -17,7 +17,7 @@ type
 type
   Command* = ref object of RootObj
     regex*: Regex
-    run*: proc(message: Message)
+    run*: proc(message: Message, rmatch: RegexMatch)
 
   Mode* = ref object of RootObj
     name*: string
