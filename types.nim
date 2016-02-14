@@ -1,4 +1,4 @@
-import nre, tables, queues
+import nre, tables, options
 
 type
   User* = object

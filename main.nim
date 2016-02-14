@@ -58,7 +58,9 @@ proc handler() {.gcsafe.} =
       continuations[rpc.user.id].enqueue(rpc.next)
 
 proc cb(req: Request) {.async.} =
-  channel.send(Rpc(kind: RpcKind.Telegram, message: parseMessage(req.body)))
+  let m = parseMessage(req.body)
+  if m.isSome:
+    channel.send(Rpc(kind: RpcKind.Telegram, message: m.get()))
   await req.respond(Http200, "")
 
 proc main() =

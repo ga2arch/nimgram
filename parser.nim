@@ -1,19 +1,25 @@
-import json, types
+import json, types, options
 
-proc parseChat(data: JsonNode): Chat =
-  let f = data["message"]["chat"]
+proc getChat(data: JsonNode): Chat =
+  let f = data["chat"]
   Chat(id: f["id"].num)
 
-proc parseFrom(data: JsonNode): User =
+proc getUser(data: JsonNode): User =
   let f = data["message"]["from"]
   User(id: f["id"].num, name: f["first_name"].str)
 
-proc parseMessage*(data: string): Message =
-  let p     = parseJson(data)
-  let user  = parseFrom(p)
-  let chat  = parseChat(p)
-  let m     = p["message"]
-  Message(id: m["message_id"].num,
-          text: m["text"].str,
-          user: user,
-          chat: chat)
+proc parseMessage*(data: string): Option[Message] =
+  let js = parseJson(data)
+
+  if js.hasKey("message"):
+    let
+      m = js["message"]
+      user = m.getUser()
+      chat = m.getChat()
+
+    some(Message(id: m["message_id"].num,
+            text: m["text"].str,
+            user: user,
+            chat: chat))
+  else:
+    none(Message)

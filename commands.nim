@@ -157,7 +157,7 @@ proc newTF2Command(): Command =
     simpatia = "76561198005312787"
 
   Command(regex: re"/tf2 (?<id>.*)",
-          help: "/tf2 <userid> #Check if the user is playing tf2",
+          help: "/tf2 <userid> #Checks if the user is playing tf2",
           run: proc(message: Message, rmatch: RegexMatch) =
             var playerid = rmatch.captures["id"]
             case playerid
@@ -171,10 +171,10 @@ proc newTF2Command(): Command =
               p    = parseJson(resp)
               data = p["response"]["players"][0]
             if data.hasKey("gameid") and data["gameid"].getStr == "440":
-              message.user.sendMessage(data["personaname"].getStr &
+              message.chat.sendMessage(data["personaname"].getStr &
                 " is playing TF2!!!")
             else:
-              message.user.sendMessage(data["personaname"].getStr &
+              message.chat.sendMessage(data["personaname"].getStr &
                 " is not playing."))
 
 proc loadCommands*(): seq[Command] =

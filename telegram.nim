@@ -1,4 +1,4 @@
-import httpclient, types, os
+import httpclient, types, os, options
 
 
 proc call(api: string, multipart: MultipartData) =
