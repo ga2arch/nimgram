@@ -120,12 +120,13 @@ proc newRemindCommand(): Command =
     user.sendMessage(text)
 
   Command(regex: re"/remind (?<interval>[0-9]+)(?<unit>[s_m_h]) (?<text>.*)",
+          help: "/remind <time><s/m/h> <text>",
           run: proc(message: Message, rmatch: RegexMatch) =
             let
               interval = rmatch.captures["interval"].parseInt
               unit     = rmatch.captures["unit"]
               text     = rmatch.captures["text"]
-              
+
             var time: int = 0
             case unit
             of "s": time = 1000
@@ -137,9 +138,49 @@ proc newRemindCommand(): Command =
             time = time * interval
             spawn waiter(message.user, text, time))
 
+proc newHelpCommand(commands: seq[Command]): Command =
+  Command(regex: re"/help",
+          run: proc(message: Message, _: RegexMatch) =
+            var helpMsg = ""
+            for cmd in commands:
+              if cmd.help != nil:
+                 helpMsg = helpMsg & "\n" & cmd.help
+            if helpMsg.len > 0:
+              message.user.sendMessage(helpMsg))
+
+proc newTF2Command(): Command =
+  let
+    apiKey = getEnv("STEAM")
+    apiUrl = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=" &
+      apiKey & "&steamids="
+    nierro = "76561198043794079"
+    simpatia = "76561198005312787"
+
+  Command(regex: re"/tf2 (?<id>.*)",
+          help: "/tf2 <userid> #Check if the user is playing tf2",
+          run: proc(message: Message, rmatch: RegexMatch) =
+            var playerid = rmatch.captures["id"]
+            case playerid
+            of "nierro": playerid = nierro
+            of "simpatia": playerid = simpatia
+            else: discard
+
+            let
+              url  = apiUrl & playerid
+              resp = getContent(url)
+              p    = parseJson(resp)
+              data = p["response"]["players"][0]
+            if data.hasKey("gameid") and data["gameid"].getStr == "440":
+              message.user.sendMessage(data["personaname"].getStr &
+                " is playing TF2!!!")
+            else:
+              message.user.sendMessage(data["personaname"].getStr &
+                " is not playing."))
+
 proc loadCommands*(): seq[Command] =
-  return @[newPingCommand(), newRemindCommand()]
+  var cmds = @[newPingCommand(), newRemindCommand(), newTF2Command()]
+  cmds.add(newHelpCommand(cmds))
+  return cmds
 
 proc loadModes*(): seq[Mode] =
   return @[newHNMode(), newYTMode()]
-

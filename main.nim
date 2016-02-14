@@ -48,17 +48,17 @@ proc handler() {.gcsafe.} =
     var rpc = channel.recv()
     echo(rpc.kind)
     case rpc.kind
-    of RpcKind.Telegram: handleMessage(rpc.message, continuations)
+    of RpcKind.Telegram:
+      try:
+        handleMessage(rpc.message, continuations)
+      except: discard
     of RpcKind.Continuation:
       if not continuations.hasKey(rpc.user.id):
         continuations[rpc.user.id] = initQueue[Next]()
       continuations[rpc.user.id].enqueue(rpc.next)
 
 proc cb(req: Request) {.async.} =
-  try:
-    channel.send(Rpc(kind: RpcKind.Telegram, message: parseMessage(req.body)))
-  except:
-    discard
+  channel.send(Rpc(kind: RpcKind.Telegram, message: parseMessage(req.body)))
   await req.respond(Http200, "")
 
 proc main() =
