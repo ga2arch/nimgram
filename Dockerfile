@@ -1,6 +1,7 @@
 FROM ga2arch/nimgram-base:latest
 
 ADD main /home/nimgram/
+ADD extract.py /home/nimgram
 
 WORKDIR /home/nimgram
 
