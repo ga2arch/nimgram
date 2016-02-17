@@ -1,5 +1,6 @@
 FROM ga2arch/nimgram-base:latest
 
+RUN pip install goose-extractor
 ADD main /home/nimgram/
 
 WORKDIR /home/nimgram

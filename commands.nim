@@ -10,6 +10,18 @@ proc next(user: User, cont: proc(message: Message)) =
                    user: user,
                    next: next))
 
+proc extract(url: string): string =
+  let
+    resp = execProcess("python extract.py " & url)
+    js   = parseJson(resp)
+    meta = js["meta"].getStr
+    text = js["text"].getStr
+
+  if meta.len == 0:
+    return text[0..150] & "..."
+  else:
+    return meta
+
 proc fetchStory(id: int64): string =
   let
     itemUrl = baseUrl & "item/" & $id & ".json"
@@ -20,13 +32,14 @@ proc fetchStory(id: int64): string =
     title = p["title"].getStr
     url = p["url"].getStr
     id = $p["id"].getNum
-    numComments = $p["descendants"].getNum
     commentsUrl = "https://news.ycombinator.com/item?id=" & id
-    score = $p["score"].getNum
+    meta = extract(url)
 
   result = """[$1]($2)
-
-[$3 comments]($4)""" % [title, url, numComments, commentsUrl, score]
+  
+$4
+  
+[comments]($3)""" % [title, url, commentsUrl, meta]
 
 proc checkHN() =
   var db = redis.open(host = getEnv("REDIS"))
