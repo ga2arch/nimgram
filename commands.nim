@@ -20,10 +20,13 @@ proc fetchStory(id: int64): string =
     title = p["title"].getStr
     url = p["url"].getStr
     id = $p["id"].getNum
+    numComments = $p["descendants"].getNum
+    commentsUrl = "https://news.ycombinator.com/item?id=" & id
+    score = $p["score"].getNum
 
-  result = title &
-    "\n\n" & url &
-    "\n\n" & "https://news.ycombinator.com/item?id=" & id
+  result = """[$1]($2)
+
+[$3 comments]($4)""" % [title, url, numComments, commentsUrl, score]
 
 proc checkHN() =
   var db = redis.open(host = getEnv("REDIS"))
@@ -62,62 +65,61 @@ proc newHNMode(): Mode =
     let capture = message.text.match(thresholdRegex)
     if capture.isSome:
       let num = capture.get.captures["num"]
-      discard db.hSet($message.user.id, "hn:threshold", num)
-      message.user.sendMessage("Threshold set " & num)
+      discard db.hSet($message.chat.id, "hn:threshold", num)
+      message.chat.sendMessage("Threshold set " & num)
 
   Mode(name: "hn",
-       isActive: proc(user: User): bool =
-                     let ismem = db.sismember("hn:users", $user.id)
+       isActive: proc(chat: Chat): bool =
+                     let ismem = db.sismember("hn:users", $chat.id)
                      return ismem == 1,
        run: run,
-       enable: proc(user: User) =
-         discard db.hSet($user.id, "hn:threshold", "5")
-         discard db.sAdd("hn:users", $user.id),
+       enable: proc(chat: Chat) =
+         discard db.hSet($chat.id, "hn:threshold", "5")
+         discard db.sAdd("hn:users", $chat.id),
 
-       disable: proc(user: User) =
-         discard db.del($user.id & ":hn:sent")
-         discard db.del($user.id)
-         discard db.sRem("hn:users", $user.id))
+       disable: proc(chat: Chat) =
+         discard db.del($chat.id & ":hn:sent")
+         discard db.del($chat.id)
+         discard db.sRem("hn:users", $chat.id))
 
-proc download(code: string, user: User) =
+proc download(code: string, chat: Chat) =
   let url = "http://www.youtube.com/watch?v=" & code
   let resp = execProcess("youtube-dl --get-filename " &
     r"--output static/%\(title\)s.%\(ext\)s " & url)
   if resp.startsWith("ERROR"):
-    user.sendMessage(resp)
+    chat.sendMessage(resp)
     return
 
   let filename = resp.changeFileExt(".mp3")
-  user.sendMessage("Downloading: " & filename.extractFilename)
+  chat.sendMessage("Downloading: " & filename.extractFilename)
   discard execProcess("youtube-dl -x --audio-format mp3 " &
     url & r" --output static/%\(title\)s.%\(ext\)s --no-playlist")
-  user.sendAudio(filename)
+  chat.sendAudio(filename)
   removeFile(filename)
 
 proc newYTMode(): Mode =
   Mode(name: "youtube",
-       isActive: proc(user: User): bool = return true,
-       enable: proc(user: User) = discard,
-       disable: proc(user: User) = discard,
+       isActive: proc(chat: Chat): bool = return true,
+       enable: proc(chat: Chat) = discard,
+       disable: proc(chat: Chat) = discard,
        run: proc(message: Message) =
-         echo(message)
          let ytRegex = re"(?:youtube\.com\/\S*(?:(?:\/e(?:mbed))?\/|watch\?(?:\S*?&?v\=))|youtu\.be\/)([a-zA-Z0-9_-]{6,11})"
          let capture = message.text.find(ytRegex)
          if capture.isSome:
            try:
-             download(capture.get.captures[0], message.user)
+             download(capture.get.captures[0], message.chat)
            except Exception:
-             message.user.sendMessage(getCurrentExceptionMsg()))
+             message.chat.sendMessage(getCurrentExceptionMsg()))
 
 proc newPingCommand(): Command =
   Command(regex: re"/ping",
           run: proc(message: Message, rmatch: RegexMatch) =
-            message.user.sendMessage("PONG"))
+            message.chat.sendMessage("PONG"))
 
 proc newRemindCommand(): Command =
-  let waiter = proc(user: User, text: string, time: int) =
+  let waiter = proc(chat: Chat, text: string, time: int) =
     sleep(time)
-    user.sendMessage(text)
+    chat.sendMessage(text)
 
   Command(regex: re"/remind (?<interval>[0-9]+)(?<unit>[s_m_h]) (?<text>.*)",
           help: "/remind <time><s/m/h> <text>",
@@ -136,7 +138,7 @@ proc newRemindCommand(): Command =
 
             message.user.sendMessage("Remind set")
             time = time * interval
-            spawn waiter(message.user, text, time))
+            spawn waiter(message.chat, text, time))
 
 proc newHelpCommand(commands: seq[Command]): Command =
   Command(regex: re"/help",
@@ -146,7 +148,7 @@ proc newHelpCommand(commands: seq[Command]): Command =
               if cmd.help != nil:
                  helpMsg = helpMsg & "\n" & cmd.help
             if helpMsg.len > 0:
-              message.user.sendMessage(helpMsg))
+              message.chat.sendMessage(helpMsg))
 
 proc newTF2Command(): Command =
   let

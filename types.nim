@@ -11,7 +11,7 @@ type
   Message* = object
     id*: int64
     text*: string
-    user*: User
+    user*: Option[User]
     chat*: Chat
 
 type
@@ -23,10 +23,10 @@ type
   Mode* = ref object of RootObj
     name*: string
     help*: string
-    enable*: proc(user: User)
-    disable*: proc(user: User)
+    enable*: proc(user: Chat)
+    disable*: proc(user: Chat)
     run*: proc(message: Message)
-    isActive*: proc(user: User): bool
+    isActive*: proc(user: Chat): bool
 
 type
   Next* = object

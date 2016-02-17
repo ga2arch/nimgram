@@ -12,9 +12,9 @@ var config {.threadvar.}: Config
 
 proc handleMessage(message: Message,
                    continuations: TableRef[int64, Queue[Next]]) =
-  echo(message)
-  if continuations.hasKey(message.user.id):
-    var q = addr continuations[message.user.id]
+  echo($message.chat & ": " & message.text)
+  if continuations.hasKey(message.chat.id):
+    var q = addr continuations[message.chat.id]
     if q.len > 0:
       q.dequeue().run(message)
       return
@@ -29,15 +29,15 @@ proc handleMessage(message: Message,
     let on  = re("/" & mode.name & " on")
     let off = re("/" & mode.name & " off")
 
-    if mode.isActive(message.user):
+    if mode.isActive(message.chat):
       if message.text.match(off).isSome:
-        mode.disable(message.user)
+        mode.disable(message.chat)
         message.user.sendMessage(mode.name & " off")
       else:
         mode.run(message)
     else:
       if message.text.match(on).isSome:
-        mode.enable(message.user)
+        mode.enable(message.chat)
         message.user.sendMessage(mode.name & " on")
 
 proc handler() {.gcsafe.} =
@@ -46,7 +46,6 @@ proc handler() {.gcsafe.} =
   var continuations = newTable[int64, Queue[Next]]()
   while true:
     var rpc = channel.recv()
-    echo(rpc.kind)
     case rpc.kind
     of RpcKind.Telegram:
       try:
